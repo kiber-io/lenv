@@ -1,4 +1,8 @@
 # javaenv
+
+> **Warning**
+`javaenv` is in alpha version. Bugs and instability are possible.
+
 `javaenv` is a simple tool to manage multiple Java versions on a single machine. It is inspired by [pyenv](https://github.com/pyenv/pyenv) for Python.
 
 ```
