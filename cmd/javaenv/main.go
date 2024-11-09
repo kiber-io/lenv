@@ -87,7 +87,7 @@ func install(version string) {
 	parts := strings.Split(version, "-")
 	installed := common.FindVersion(common.Config.InstalledVersions, parts[0], parts[1])
 	if installed != nil {
-		fmt.Printf("Java version %s is already installed", version)
+		fmt.Printf("Java version %s is already installed\n", version)
 		return
 	}
 	fmt.Println("Downloading...")
@@ -102,7 +102,7 @@ func install(version string) {
 	fmt.Println("Extracting...")
 	common.Unzip(filePath, jdkDir)
 	os.Remove(filePath)
-	fmt.Printf("Java version %s installed", version)
+	fmt.Printf("Java version %s installed\n", version)
 	common.AddVersion(common.Version{
 		Version: parts[0],
 		Path:    jdkDir,
@@ -167,7 +167,7 @@ func setGlobal(version string) {
 			log.Fatalf("Failed to set global version: %v", err)
 		}
 		setJavaHome()
-		fmt.Printf("Java version %s set as global", version)
+		fmt.Printf("Java version %s set as global\n", version)
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
@@ -200,16 +200,16 @@ func uninstall(version string) {
 	parts := strings.Split(version, "-")
 	installed := common.FindVersion(common.Config.InstalledVersions, parts[0], parts[1])
 	if installed == nil {
-		fmt.Printf("Java version %s is not installed", version)
+		fmt.Printf("Java version %s is not installed\n", version)
 		return
 	}
 	if installed.Path == common.Config.GlobalVersion {
-		fmt.Printf("Java version %s is set as global, unset it first", version)
+		fmt.Printf("Java version %s is set as global, unset it first\n", version)
 		return
 	}
 	err := os.RemoveAll(installed.Path)
 	if err != nil {
-		fmt.Printf("Failed to uninstall Java version %s: %v", version, err)
+		fmt.Printf("Failed to uninstall Java version %s: %v\n", version, err)
 		return
 	}
 	fmt.Printf("Java version %s uninstalled", version)
