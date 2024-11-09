@@ -33,6 +33,7 @@ Available Versions:
  -> 8-openjdk
 ```
 `*` - downloaded localy
+
 `->` - currently active version
 
 ### Install a Java version
