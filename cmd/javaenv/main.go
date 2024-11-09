@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"kiber-io/javaenv/common"
 	"log"
@@ -167,12 +168,24 @@ func setGlobal(version string) {
 			log.Fatalf("Failed to set global version: %v", err)
 		}
 		setJavaHome()
-		fmt.Printf("Java version %s set as global\n", version)
+	case "linux":
+		os.Remove(common.CurrentJdkDir)
+		err := os.Symlink(installed.Path, common.CurrentJdkDir)
+		if err != nil {
+			log.Fatalf("Failed to set global version: %v", err)
+		}
+		cmd := exec.Command("chmod", "-R", "755", common.CurrentJdkDir)
+		err = cmd.Run()
+		if err != nil {
+			log.Fatalf("Failed to set global version: %v", err)
+		}
+		setJavaHome()
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
 
 	common.Config.GlobalVersion = installed.Path
+	fmt.Printf("Java version %s set as global. Restart the terminal if you need to use the updated JAVA_HOME variable", version)
 }
 
 func setJavaHome() {
@@ -188,10 +201,76 @@ func setJavaHome() {
 		if err != nil {
 			log.Fatalf("Failed to set JAVA_HOME: %v", err)
 		}
-		cmd := exec.Command("cmd", "/c", "setx", "JAVA_HOME", common.CurrentJdkDir)
-		err = cmd.Run()
+		switch runtime.GOOS {
+		case "windows":
+			setWindowsJavaHome()
+		case "linux":
+			setLinuxJavaHome()
+		default:
+			log.Fatalf("Unknown operating system: %s", runtime.GOOS)
+		}
+	}
+}
+
+func setWindowsJavaHome() {
+	cmd := exec.Command("cmd", "/c", "setx", "JAVA_HOME", common.CurrentJdkDir)
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to set JAVA_HOME: %v", err)
+	}
+}
+
+func setLinuxJavaHome() {
+	profilePath := filepath.Join(os.Getenv("HOME"), ".profile")
+	addJavaHomeToFile(profilePath)
+	bashrcPath := filepath.Join(os.Getenv("HOME"), ".bashrc")
+	addJavaHomeToFile(bashrcPath)
+}
+
+func addJavaHomeToFile(path string) {
+	file, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			file, err = os.Create(path)
+			if err != nil {
+				log.Fatalf("Failed to create %s: %v", path, err)
+			}
+		} else {
+			log.Fatalf("Failed to open %s: %v", path, err)
+		}
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	javaHomeFound := false
+	javaHomeLine := fmt.Sprintf("export JAVA_HOME=%s", common.CurrentJdkDir)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == javaHomeLine {
+			javaHomeFound = true
+		}
+		lines = append(lines, line)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Failed to read %s: %v", path, err)
+	}
+
+	if !javaHomeFound {
+		lines = append(lines, javaHomeLine)
+		outputFile, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
-			log.Fatalf("Failed to set JAVA_HOME: %v", err)
+			log.Fatalf("Failed to open %s for writing: %v", path, err)
+		}
+		defer outputFile.Close()
+
+		for _, line := range lines {
+			_, err = fmt.Fprintln(outputFile, line)
+			if err != nil {
+				log.Fatalf("Failed to write to %s: %v", path, err)
+			}
 		}
 	}
 }
@@ -212,7 +291,7 @@ func uninstall(version string) {
 		fmt.Printf("Failed to uninstall Java version %s: %v\n", version, err)
 		return
 	}
-	fmt.Printf("Java version %s uninstalled", version)
+	fmt.Printf("Java version %s uninstalled\n", version)
 	removed := common.RemoveVersion(*installed)
 	if !removed {
 		log.Fatalf("Failed to remove version %s from config", version)
