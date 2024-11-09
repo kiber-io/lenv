@@ -1,7 +1,7 @@
 $repo = "kiber-io/javaenv"
 $rootDir = "$env:USERPROFILE\.javaenv"
-$installDir = "$rootDir\bin"
-$envVarPath = "$installDir\javaenv.exe"
+$binDir = "$rootDir\bin"
+$envVarPath = "$binDir\javaenv.exe"
 $currentJdkPath = "$rootDir\currentjdk\bin"
 
 $assetName = if ([System.Environment]::Is64BitOperatingSystem) {
@@ -18,19 +18,19 @@ if (-not $latestAsset) {
     exit 1
 }
 
-if (!(Test-Path -Path $installDir)) {
-    New-Item -ItemType Directory -Path $installDir | Out-Null
+if (!(Test-Path -Path $binDir)) {
+    New-Item -ItemType Directory -Path $binDir | Out-Null
 }
 
-$downloadPath = "$installDir\javaenv.exe"
+$downloadPath = "$binDir\javaenv.exe"
 Invoke-WebRequest -Uri $latestAsset.browser_download_url -OutFile $downloadPath
 
 $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::User)
-if (-not $currentPath.Contains($installDir)) {
-    $currentPath = "$currentPath;$installDir"
-}
 if (-not $currentPath.Contains($currentJdkPath)) {
-    $currentPath = "$currentPath;$currentJdkPath"
+    $currentPath = "$currentJdkPath;$currentPath"
+}
+if (-not $currentPath.Contains($binDir)) {
+    $currentPath = "$binDir;$currentPath"
 }
 [System.Environment]::SetEnvironmentVariable("Path", $currentPath, [System.EnvironmentVariableTarget]::User)
 
