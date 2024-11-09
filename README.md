@@ -9,6 +9,7 @@ OpenJDK 64-Bit Server VM (build 25.432-b06, mixed mode)
 
 $ javaenv install 11-openjdk
 $ javaenv global 11-openjdk
+$ java -version
 
 openjdk version "18.0.2" 2022-07-19
 OpenJDK Runtime Environment (build 18.0.2+9-61)
