@@ -185,7 +185,7 @@ func setGlobal(version string) {
 	}
 
 	common.Config.GlobalVersion = installed.Path
-	fmt.Printf("Java version %s set as global. Restart the terminal if you need to use the updated JAVA_HOME variable", version)
+	fmt.Printf("Java version %s set as global. Restart the terminal if you need to use the updated JAVA_HOME variable\n", version)
 }
 
 func setJavaHome() {
