@@ -48,3 +48,6 @@ Java version 11-openjdk installed
 $ javaenv global 11-openjdk
 Java version 11-openjdk set as global
 ```
+
+## Uninstall
+Simply remove the `.javaenv` directory from your home directory.
