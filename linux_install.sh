@@ -34,6 +34,7 @@ mkdir -p "$currentJdkPath"
 
 downloadPath="$javaenvHomeBinPath/javaenv"
 curl -L "$latestAsset" -o "$downloadPath"
+chmod +x "$downloadPath"
 
 path=$(echo "$PATH")
 if [[ ! "$path" == *"$ENV_JAVA_HOME/bin"* ]]; then
