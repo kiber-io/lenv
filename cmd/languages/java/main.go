@@ -142,17 +142,16 @@ func setGlobal(version string) {
 	if installed == nil {
 		log.Fatalf("Java version %s is not installed", version)
 	}
+	common.SetGlobalVersion(*installed)
 	switch runtime.GOOS {
 	case "windows":
 		setGlobalWindows(*installed)
 	case "linux":
-		setGlobalLinux(*installed)
 	case "android":
-		setGlobalAndroid(*installed)
+		setGlobalLinux(*installed)
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
-	common.SetGlobalVersion(*installed)
 	fmt.Printf("Java version %s set as global\n", version)
 }
 
@@ -171,29 +170,8 @@ func setGlobalLinux(version common.Version) {
 	if err != nil {
 		log.Fatalf("Failed to set global version: %v", err)
 	}
-	cmd := exec.Command("chmod", "-R", "755", common.Config.CurrentVersionDir)
+	cmd := exec.Command("chmod", "-R", "755", common.Config.GlobalVersion.Path)
 	err = cmd.Run()
-	if err != nil {
-		log.Fatalf("Failed to set global version: %v", err)
-	}
-}
-
-func chmodRecursive(path string, mode os.FileMode) error {
-	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		return os.Chmod(filePath, mode)
-	})
-}
-
-func setGlobalAndroid(version common.Version) {
-	os.Remove(common.Config.CurrentVersionDir)
-	err := os.Symlink(version.Path, common.Config.CurrentVersionDir)
-	if err != nil {
-		log.Fatalf("Failed to set global version: %v", err)
-	}
-	err = chmodRecursive(common.Config.CurrentVersionDir, 0755)
 	if err != nil {
 		log.Fatalf("Failed to set global version: %v", err)
 	}
