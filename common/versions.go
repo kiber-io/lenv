@@ -14,6 +14,10 @@ type Version struct {
 	Vendor  string `json:"vendor"`
 }
 
+func (v Version) Name() string {
+	return fmt.Sprintf("%s-%s", v.Version, v.Vendor)
+}
+
 type ServerVersion struct {
 	TagName string  `json:"tag_name"`
 	Assets  []Asset `json:"assets"`
