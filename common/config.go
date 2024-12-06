@@ -19,12 +19,17 @@ var Config config
 var rootDir string
 var languageDir string
 
-func LoadConfig(language string) {
-	rootDir = os.Getenv("LENV_HOME")
-	if rootDir == "" {
+func GetRoot() string {
+	dir := os.Getenv("LENV_HOME")
+	if dir == "" {
 		fmt.Println("LENV_HOME is not set")
 		os.Exit(1)
 	}
+	return dir
+}
+
+func LoadConfig(language string) {
+	rootDir = GetRoot()
 	if _, err := os.Stat(rootDir); os.IsNotExist(err) {
 		log.Fatal("LENV_HOME directory not found")
 	}

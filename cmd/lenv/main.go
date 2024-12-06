@@ -3,6 +3,7 @@ package main
 import (
 	"kiber-io/lenv/cmd/languages/java"
 	"kiber-io/lenv/cmd/languages/python"
+	"kiber-io/lenv/common"
 
 	"github.com/spf13/cobra"
 )
@@ -18,6 +19,12 @@ func main() {
 		Short: "Print version",
 		Run: func(cmd *cobra.Command, args []string) {
 			println("lenv", version)
+		},
+	}
+	var printRootCmd = &cobra.Command{
+		Use: "root",
+		Run: func(cmd *cobra.Command, args []string) {
+			println(common.GetRoot())
 		},
 	}
 	var javaCmd = &cobra.Command{
@@ -42,6 +49,7 @@ func main() {
 			}
 		},
 	}
+	rootCmd.AddCommand(printRootCmd)
 	rootCmd.AddCommand(javaCmd)
 	rootCmd.AddCommand(pythonCmd)
 	rootCmd.AddCommand(versionCmd)
