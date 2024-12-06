@@ -11,7 +11,7 @@ build() {
 
     echo "Building for $os $arch..."
 
-    GOOS=$os GOARCH=$arch go build -o "$OUTPUT_DIR/$output_name" ./cmd/javaenv
+    GOOS=$os GOARCH=$arch go build -o "$OUTPUT_DIR/$output_name" ./cmd/lenv
 
     if [ $? -eq 0 ]; then
         echo "Successfully built $output_name"
@@ -20,9 +20,9 @@ build() {
     fi
 }
 
-build "windows" "amd64" "javaenv_win64.exe"
-build "windows" "386" "javaenv_win32.exe"
-build "linux" "amd64" "javaenv_linux64"
-build "linux" "386" "javaenv_linux32"
+build "windows" "amd64" "lenv_win64.exe"
+build "windows" "386" "lenv_win32.exe"
+build "linux" "amd64" "lenv_linux64"
+build "linux" "386" "lenv_linux32"
 
 echo "Build process completed."

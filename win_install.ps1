@@ -1,57 +1,95 @@
-$ENV_JAVAENV_HOME = "JAVAENV_HOME"
-$ENV_JAVA_HOME = "JAVA_HOME"
-$ENV_PATH = "Path"
+param (
+    [switch]$Debug
+)
 
-$javaenvHomePath = "$env:USERPROFILE\.javaenv"
-$javaenvHomeBinPath = "$javaenvHomePath\bin"
-$currentJdkPath = "$javaenvHomePath\currentjdk"
-
-$isAdmin = ([Security.Principal.WindowsIdentity]::GetCurrent()).Groups -match 'S-1-5-32-544'
-
-if ($isAdmin) {
-    Write-Output "Error: Please run this script as a non-administrator."
-    exit
+function Initialize-EnvironmentVariables {
+    $lenvHomePath = "$env:USERPROFILE\.lenv"
+    $envVars = @{
+        ENV_LENV_HOME   = "LENV_HOME"
+        ENV_JAVA_HOME   = "JAVA_HOME"
+        ENV_PATH        = "Path"
+        lenvHomePath    = $lenvHomePath
+        lenvHomeBinPath = "$lenvHomePath\bin"
+        javaCurrentPath = "$lenvHomePath\java\current"
+    }
+    return $envVars
 }
 
-$assetName = if ([System.Environment]::Is64BitOperatingSystem) {
-    "javaenv_win64.exe"
-} else {
-    "javaenv_win32.exe"
+function Test-Admin {
+    $isAdmin = ([Security.Principal.WindowsIdentity]::GetCurrent()).Groups -match 'S-1-5-32-544'
+    if ($isAdmin) {
+        Write-Output "Error: Please run this script as a non-administrator."
+        exit
+    }
 }
 
-$latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/kiber-io/javaenv/releases/latest"
-$latestAsset = $latestRelease.assets | Where-Object { $_.name -eq $assetName }
-
-if (-not $latestAsset) {
-    Write-Output "Error: Could not find the asset for $assetName in the latest release."
-    exit 1
+function Get-AssetName {
+    if ([System.Environment]::Is64BitOperatingSystem) {
+        return "lenv_win64.exe"
+    }
+    else {
+        return "lenv_win32.exe"
+    }
 }
 
-# create directories only when asset is found to avoid creating unnecessary directories
-if (!(Test-Path -Path $javaenvHomeBinPath)) {
-    New-Item -ItemType Directory -Path $javaenvHomeBinPath | Out-Null
-}
-if (!(Test-Path -Path $currentJdkPath)) {
-    New-Item -ItemType Directory -Path $currentJdkPath | Out-Null
-}
+function Get-LatestAsset {
+    $latestRelease = Invoke-RestMethod -Uri "https://api.github.com/repos/kiber-io/lenv/releases/latest"
+    $assetName = Get-AssetName
+    $latestAsset = $latestRelease.assets | Where-Object { $_.name -eq $assetName }
 
-$downloadPath = "$javaenvHomeBinPath\javaenv.exe"
-Invoke-WebRequest -Uri $latestAsset.browser_download_url -OutFile $downloadPath
-
-$path = [System.Environment]::GetEnvironmentVariable($ENV_PATH, [System.EnvironmentVariableTarget]::User)
-$javaHomePath = [System.Environment]::GetEnvironmentVariable($ENV_JAVA_HOME, [System.EnvironmentVariableTarget]::User)
-# if JAVA_HOME\bin is not in the path, add it
-if ($null -eq $javaHomePath -or -not $path.Contains("%$ENV_JAVA_HOME%\bin")) {
-    $path = "%$ENV_JAVA_HOME%\bin;$path"
+    if (-not $latestAsset) {
+        Write-Output "Error: Could not find the asset for $assetName in the latest release."
+        exit 1
+    }
+    return $latestAsset.browser_download_url
 }
 
-$javaenvPath = [System.Environment]::GetEnvironmentVariable($ENV_JAVAENV_HOME, [System.EnvironmentVariableTarget]::User)
-# if JAVAENV_HOME\bin is not set or it is not in the path, add it
-if ($null -eq $javaenvPath -or -not $path.Contains("%$ENV_JAVAENV_HOME%\bin")) {
-    $path = "%$ENV_JAVAENV_HOME%\bin;$path"
+function New-Directories ($envVars) {
+    if (!(Test-Path -Path $envVars.lenvHomeBinPath)) {
+        New-Item -ItemType Directory -Path $envVars.lenvHomeBinPath | Out-Null
+    }
+    if (!(Test-Path -Path $envVars.javaCurrentPath)) {
+        New-Item -ItemType Directory -Path $envVars.javaCurrentPath | Out-Null
+    }
 }
-[System.Environment]::SetEnvironmentVariable($ENV_JAVAENV_HOME, $javaenvHomePath, [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable($ENV_JAVA_HOME, "%$ENV_JAVAENV_HOME%\currentjdk", [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable($ENV_PATH, $path, [System.EnvironmentVariableTarget]::User)
 
-Write-Output "Installation completed. Please restart your terminal to start using javaenv."
+function Get-Asset ($envVars) {
+    if ($Debug) {
+        $localFilePath = ""
+        $localFilePath = "$PSScriptRoot\build\" + (Get-AssetName)
+        $destinationPath = "$($envVars.lenvHomeBinPath)\lenv.exe"
+        Copy-Item -Path $localFilePath -Destination $destinationPath
+    } else {
+        $downloadUrl = Get-LatestAsset
+        $downloadPath = "$($envVars.lenvHomeBinPath)\lenv.exe"
+        Invoke-WebRequest -Uri $downloadUrl -OutFile $downloadPath
+    }
+}
+
+function Update-EnvironmentVariables ($envVars) {
+    $path = [System.Environment]::GetEnvironmentVariable($envVars.ENV_PATH, [System.EnvironmentVariableTarget]::User)
+    $javaHomePath = [System.Environment]::GetEnvironmentVariable($envVars.ENV_JAVA_HOME, [System.EnvironmentVariableTarget]::User)
+    if ($null -eq $javaHomePath -or -not $path.Contains("%$($envVars.ENV_JAVA_HOME)%\bin")) {
+        $path = "%$($envVars.ENV_JAVA_HOME)%\bin;$path"
+    }
+
+    $lenvPath = [System.Environment]::GetEnvironmentVariable($envVars.ENV_LENV_HOME, [System.EnvironmentVariableTarget]::User)
+    if ($null -eq $lenvPath -or -not $path.Contains("%$($envVars.ENV_LENV_HOME)%\bin")) {
+        $path = "%$($envVars.ENV_LENV_HOME)%\bin;$path"
+    }
+
+    [System.Environment]::SetEnvironmentVariable($envVars.ENV_LENV_HOME, $envVars.lenvHomePath, [System.EnvironmentVariableTarget]::User)
+    [System.Environment]::SetEnvironmentVariable($envVars.ENV_JAVA_HOME, "%$($envVars.ENV_LENV_HOME)%\java\current", [System.EnvironmentVariableTarget]::User)
+    [System.Environment]::SetEnvironmentVariable($envVars.ENV_PATH, $path, [System.EnvironmentVariableTarget]::User)
+}
+
+function Main {
+    Test-Admin
+    $envVars = Initialize-EnvironmentVariables
+    New-Directories $envVars
+    Get-Asset $envVars
+    Update-EnvironmentVariables $envVars
+    Write-Output "Installation completed. Please restart your terminal to start using lenv."
+}
+
+Main
