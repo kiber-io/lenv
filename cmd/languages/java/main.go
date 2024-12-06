@@ -146,6 +146,7 @@ func setGlobal(version string) {
 	case "windows":
 		setGlobalWindows(*installed)
 	case "linux":
+	case "android":
 		setGlobalLinux(*installed)
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
