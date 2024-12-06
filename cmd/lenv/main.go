@@ -26,6 +26,7 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			println(common.GetRoot())
 		},
+		Hidden: true,
 	}
 	var javaCmd = &cobra.Command{
 		Use:     "java",
