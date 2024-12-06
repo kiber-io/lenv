@@ -14,18 +14,18 @@ func GetPlatformPrefix(osName string, arch string) string {
 	var prefix string
 	switch osName {
 	case "windows":
-		prefix = "win"
-	case "darwin":
-		prefix = "mac"
+		prefix = "win_"
 	case "linux":
-		prefix = "linux"
+		prefix = "linux_"
 	default:
 		return ""
 	}
 
 	switch arch {
 	case "amd64":
-		prefix += "64"
+		prefix += "x64"
+	case "arm64":
+		prefix += "arm64"
 	default:
 		return ""
 	}

@@ -20,9 +20,8 @@ build() {
     fi
 }
 
-build "windows" "amd64" "lenv_win64.exe"
-build "windows" "386" "lenv_win32.exe"
-build "linux" "amd64" "lenv_linux64"
-build "linux" "386" "lenv_linux32"
+build "windows" "amd64" "lenv_win_x64.exe"
+build "linux" "amd64" "lenv_linux_x64"
+build "linux" "arm64" "lenv_linux_arm64"
 
 echo "Build process completed."

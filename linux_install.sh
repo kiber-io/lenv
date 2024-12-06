@@ -21,11 +21,14 @@ test_admin() {
 }
 
 get_asset_name() {
-  if [ "$(uname -m)" == "x86_64" ]; then
-    echo "lenv_linux64"
-  else
-    echo "lenv_linux32"
-  fi
+  case "$(uname -m)" in
+    x86_64) echo "lenv_linux64" ;;
+    aarch64) echo "lenv_linux_arm64" ;;
+    *)
+      echo "Error: Unknown architecture $(uname -m)"
+      exit 1
+      ;;
+  esac
 }
 
 get_latest_asset() {

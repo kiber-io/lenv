@@ -24,9 +24,8 @@ function Build {
     }
 }
 
-Build "windows" "amd64" "lenv_win64.exe"
-Build "windows" "386" "lenv_win32.exe"
-Build "linux" "amd64" "lenv_linux64"
-Build "linux" "386" "lenv_linux32"
+Build "windows" "amd64" "lenv_win_x64.exe"
+Build "linux" "amd64" "lenv_linux_x64"
+Build "linux" "arm64" "lenv_linux_arm64"
 
 Write-Output "Build process completed."
