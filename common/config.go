@@ -6,130 +6,95 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type config struct {
-	JdksDir           string    `yaml:"jdksDir"`
-	InstalledVersions []Version `yaml:"installedJdks"`
-	GlobalVersion     string    `yaml:"globalJdk"`
+	InstalledVersions []Version
+	VersionsDir       string
+	CurrentVersionDir string
+	GlobalVersion     Version
 }
 
 var Config config
-var CurrentJdkDir string
-var configFilePath string
 var rootDir string
+var languageDir string
 
-func LoadConfig() {
-	Config = config{}
-	rootDir = os.Getenv("JAVAENV_HOME")
+func LoadConfig(language string) {
+	rootDir = os.Getenv("LENV_HOME")
 	if rootDir == "" {
-		fmt.Println("JAVAENV_HOME is not set")
+		fmt.Println("LENV_HOME is not set")
 		os.Exit(1)
 	}
 	if _, err := os.Stat(rootDir); os.IsNotExist(err) {
-		err := os.Mkdir(rootDir, 0755)
+		log.Fatal("LENV_HOME directory not found")
+	}
+	if language != "java" && language != "python" {
+		log.Fatalf("Unknown language: %s", language)
+	}
+	languageDir = filepath.Join(rootDir, strings.ToLower(language))
+	if _, err := os.Stat(languageDir); os.IsNotExist(err) {
+		err := os.Mkdir(languageDir, 0755)
 		if err != nil {
 			log.Fatalf("Failed to create data directory: %v", err)
 		}
 	}
-
-	Config = config{}
-	configFilePath = filepath.Join(rootDir, "config.yaml")
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
-		data, err := yaml.Marshal(Config)
+	versionsDir := filepath.Join(languageDir, "versions")
+	if _, err := os.Stat(versionsDir); os.IsNotExist(err) {
+		err := os.Mkdir(versionsDir, 0755)
 		if err != nil {
-			log.Fatalf("Failed to initialize config data: %v", err)
-		}
-		err = os.WriteFile(configFilePath, data, 0644)
-		if err != nil {
-			log.Fatalf("Failed to create config file: %v", err)
+			log.Fatalf("Failed to create versions directory: %v", err)
 		}
 	}
-
-	data, err := os.ReadFile(configFilePath)
+	Config.VersionsDir = versionsDir
+	folders, err := os.ReadDir(versionsDir)
 	if err != nil {
-		log.Fatalf("Failed to read config file: %v", err)
+		log.Fatalf("Failed to read language directory: %v", err)
 	}
-	err = yaml.Unmarshal(data, &Config)
-	if err != nil {
-		log.Fatalf("Failed to unmarshal config data: %v", err)
-	}
-
-	if Config.JdksDir == "" {
-		Config.JdksDir = filepath.Join(rootDir, "jdks")
-	} else {
-		Config.JdksDir = strings.Replace(filepath.FromSlash(Config.JdksDir), "${JAVAENV_HOME}", rootDir, 1)
-	}
-
-	CurrentJdkDir = filepath.Join(rootDir, "currentjdk")
-
-	if Config.GlobalVersion != "" {
-		Config.GlobalVersion = strings.Replace(filepath.FromSlash(Config.GlobalVersion), "${jdksDir}", Config.JdksDir, 1)
-		if _, err := os.Stat(Config.GlobalVersion); os.IsNotExist(err) {
-			fmt.Printf("Not found global version files at %s, unset global version\n", Config.GlobalVersion)
-			Config.GlobalVersion = ""
-		} else if _, err := os.Stat(CurrentJdkDir); os.IsNotExist(err) {
-			fmt.Printf("Not found current jdk directory at %s, unset global version\n", CurrentJdkDir)
-			Config.GlobalVersion = ""
-		}
-		files, err := os.ReadDir(CurrentJdkDir)
-		if err != nil {
-			fmt.Printf("Failed to read current jdk directory: %v, unset global version\n", err)
-			Config.GlobalVersion = ""
-		} else if len(files) == 0 {
-			fmt.Printf("No files found in current jdk directory at %s, unset global version\n", CurrentJdkDir)
-			Config.GlobalVersion = ""
-		}
-	}
-
-	if _, err := os.Stat(Config.JdksDir); os.IsNotExist(err) {
-		err := os.Mkdir(Config.JdksDir, 0755)
-		if err != nil {
-			log.Fatalf("Failed to create jdks directory: %v", err)
-		}
-	}
-
-	installedVersions := []Version{}
-	for _, v := range Config.InstalledVersions {
-		v.Path = filepath.FromSlash(strings.Replace(v.Path, "${jdksDir}", Config.JdksDir, 1))
-		if _, err := os.Stat(v.Path); err == nil {
-			installedVersions = append(installedVersions, v)
+	for _, folder := range folders {
+		if folder.IsDir() {
+			parts := strings.Split(folder.Name(), "-")
+			version := Version{
+				Version: parts[0],
+				Vendor:  parts[1],
+				Path:    filepath.Join(versionsDir, folder.Name()),
+			}
+			Config.InstalledVersions = append(Config.InstalledVersions, version)
 		} else {
-			fmt.Printf("Version %s-%s not found at %s, removing from config", v.Version, v.Vendor, v.Path)
+			fmt.Printf("Unexpected file found in versions directory: %s", folder.Name())
 		}
 	}
-	Config.InstalledVersions = installedVersions
-}
-
-func SaveConfig() {
-	configForSave := Config
-	configForSave.JdksDir = filepath.ToSlash(strings.Replace(Config.JdksDir, rootDir, "${JAVAENV_HOME}", 1))
-	for i, v := range configForSave.InstalledVersions {
-		configForSave.InstalledVersions[i].Path = filepath.ToSlash(strings.Replace(v.Path, Config.JdksDir, "${jdksDir}", 1))
-	}
-	configForSave.GlobalVersion = filepath.ToSlash(strings.Replace(Config.GlobalVersion, Config.JdksDir, "${jdksDir}", 1))
-	data, err := yaml.Marshal(configForSave)
-	if err != nil {
-		log.Fatalf("Failed to marshal config data: %v", err)
-	}
-	err = os.WriteFile(configFilePath, data, 0644)
-	if err != nil {
-		log.Fatalf("Failed to write config file: %v", err)
-	}
-}
-
-func AddVersion(version Version) {
-	Config.InstalledVersions = append(Config.InstalledVersions, version)
-}
-
-func RemoveVersion(version Version) bool {
-	for i, v := range Config.InstalledVersions {
-		if v.Version == version.Version && v.Vendor == version.Vendor {
-			Config.InstalledVersions = append(Config.InstalledVersions[:i], Config.InstalledVersions[i+1:]...)
-			return true
+	Config.CurrentVersionDir = filepath.Join(languageDir, "current")
+	globalVersionFile := filepath.Join(languageDir, "global")
+	if _, err := os.Stat(globalVersionFile); os.IsNotExist(err) {
+		err := os.WriteFile(globalVersionFile, []byte(""), 0644)
+		if err != nil {
+			log.Fatalf("Failed to create global version file: %v", err)
 		}
 	}
-	return false
+	data, err := os.ReadFile(globalVersionFile)
+	if err != nil {
+		log.Fatalf("Failed to read global version file: %v", err)
+	}
+	version := string(data)
+	for _, v := range Config.InstalledVersions {
+		if v.Name() == version {
+			Config.GlobalVersion = v
+			break
+		}
+	}
+	if Config.GlobalVersion == (Version{}) {
+		err := os.WriteFile(globalVersionFile, []byte(""), 0644)
+		if err != nil {
+			log.Fatalf("Failed to write global version file: %v", err)
+		}
+	}
+}
+
+func SetGlobalVersion(version Version) {
+	globalVerionFile := filepath.Join(languageDir, "global")
+	err := os.WriteFile(globalVerionFile, []byte(version.Name()), 0644)
+	if err != nil {
+		log.Fatalf("Failed to write global version file: %v", err)
+	}
+	Config.GlobalVersion = version
 }
