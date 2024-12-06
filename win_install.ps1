@@ -25,10 +25,11 @@ function Test-Admin {
 
 function Get-AssetName {
     if ([System.Environment]::Is64BitOperatingSystem) {
-        return "lenv_win64.exe"
+        return "lenv_win_x64.exe"
     }
     else {
-        return "lenv_win32.exe"
+        Write-Output "Error: unsupported architecture."
+        exit 1
     }
 }
 
