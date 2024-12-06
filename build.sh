@@ -22,6 +22,6 @@ build() {
 
 build "windows" "amd64" "lenv_win_x64.exe"
 build "linux" "amd64" "lenv_linux_x64"
-build "linux" "arm64" "lenv_linux_arm64"
+build "android" "arm64" "lenv_android_arm64"
 
 echo "Build process completed."
