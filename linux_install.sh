@@ -21,14 +21,28 @@ test_admin() {
 }
 
 get_asset_name() {
-  case "$(uname -m)" in
-    x86_64) echo "lenv_linux64" ;;
-    aarch64) echo "lenv_linux_arm64" ;;
+  os=$(uname -o)
+  arch=$(uname -m)
+
+  case "$os" in
+    GNU/Linux) os="linux" ;;
+    Android) os="android" ;;
     *)
-      echo "Error: Unknown architecture $(uname -m)"
+      echo "Error: Unknown operating system $os"
       exit 1
       ;;
   esac
+
+  case "$arch" in
+    x86_64) arch="x64" ;;
+    aarch64) arch="arm64" ;;
+    *)
+      echo "Error: Unknown architecture $arch"
+      exit 1
+      ;;
+  esac
+
+  echo "lenv_${os}_${arch}"
 }
 
 get_latest_asset() {
