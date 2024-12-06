@@ -16,9 +16,8 @@ func GetPlatformPrefix(osName string, arch string) string {
 	case "windows":
 		prefix = "win_"
 	case "linux":
-		prefix = "linux_"
 	case "android":
-		prefix = "android_"
+		prefix = "linux_"
 	default:
 		return ""
 	}
