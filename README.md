@@ -25,7 +25,7 @@ OpenJDK 64-Bit Server VM (build 18.0.2+9-61, mixed mode, sharing)
 ```
 iwr -useb https://raw.githubusercontent.com/kiber-io/lenv/main/win_install.ps1 | iex
 ```
-### Linux
+### Linux / Android (Termux)
 ```
 bash <(curl -s https://raw.githubusercontent.com/kiber-io/lenv/main/linux_install.sh)
 ```
