@@ -58,6 +58,7 @@ get_asset() {
 
 update_environment_variables() {
   profile_file="$HOME/.profile"
+  bashrc_file="$HOME/.bashrc"
 
   ensure_newline() {
     file=$1
@@ -68,11 +69,19 @@ update_environment_variables() {
   if ! grep -q "export LENV_HOME=$lenv_home_path" "$profile_file"; then
     echo "export LENV_HOME=$lenv_home_path" >> "$profile_file"
   fi
+  if ! grep -q "export JAVA_HOME=\$LENV_HOME/java/current" "$profile_file"; then
+    echo "export JAVA_HOME=\$LENV_HOME/java/current" >> "$profile_file"
+  fi
   if ! grep -q "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" "$profile_file"; then
     echo "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" >> "$profile_file"
   fi
-  if ! grep -q "export JAVA_HOME=\$LENV_HOME/java/current" "$profile_file"; then
-    echo "export JAVA_HOME=\$LENV_HOME/java/current" >> "$profile_file"
+
+  ensure_newline "$bashrc_file"
+  if ! grep -q "export LENV_HOME=$lenv_home_path" "$bashrc_file"; then
+    echo "export LENV_HOME=$lenv_home_path" >> "$bashrc_file"
+  fi
+  if ! grep -q "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" "$bashrc_file"; then
+    echo "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" >> "$bashrc_file"
   fi
 }
 
