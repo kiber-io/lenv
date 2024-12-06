@@ -30,7 +30,7 @@ type Asset struct {
 func FetchVersions(platform string, arch string) ([]Version, error) {
 	platformPrefix := GetPlatformPrefix(platform, arch)
 	if platformPrefix == "" {
-		return nil, fmt.Errorf("unknown operating system: %s", platform)
+		return nil, fmt.Errorf("unknown operating system and architecture: %s/%s", platform, arch)
 	}
 
 	url := "https://api.github.com/repos/kiber-io/jdks/releases"
