@@ -146,8 +146,9 @@ func setGlobal(version string) {
 	case "windows":
 		setGlobalWindows(*installed)
 	case "linux":
-	case "android":
 		setGlobalLinux(*installed)
+	case "android":
+		setGlobalAndroid(*installed)
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
@@ -172,6 +173,27 @@ func setGlobalLinux(version common.Version) {
 	}
 	cmd := exec.Command("chmod", "-R", "755", common.Config.CurrentVersionDir)
 	err = cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to set global version: %v", err)
+	}
+}
+
+func chmodRecursive(path string, mode os.FileMode) error {
+	return filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		return os.Chmod(filePath, mode)
+	})
+}
+
+func setGlobalAndroid(version common.Version) {
+	os.Remove(common.Config.CurrentVersionDir)
+	err := os.Symlink(version.Path, common.Config.CurrentVersionDir)
+	if err != nil {
+		log.Fatalf("Failed to set global version: %v", err)
+	}
+	err = chmodRecursive(common.Config.CurrentVersionDir, 0755)
 	if err != nil {
 		log.Fatalf("Failed to set global version: %v", err)
 	}
