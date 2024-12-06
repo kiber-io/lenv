@@ -26,6 +26,5 @@ function Build {
 
 Build "windows" "amd64" "lenv_win_x64.exe"
 Build "linux" "amd64" "lenv_linux_x64"
-Build "android" "arm64" "lenv_android_arm64"
 
 Write-Output "Build process completed."
