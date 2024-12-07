@@ -59,8 +59,12 @@ get_latest_asset() {
 
 new_directories() {
   mkdir -p "$lenv_home_path/bin"
-  mkdir -p "$lenv_home_path/java/current"
-  mkdir -p "$lenv_home_path/python/current"
+  if [ ! -e "$lenv_home_path/java/current" ] && [ ! -L "$lenv_home_path/java/current" ]; then
+    mkdir -p "$lenv_home_path/java/current"
+  fi
+  if [ ! -d "$lenv_home_path/python/current" ] && [ ! -L "$lenv_home_path/python/current" ]; then
+    mkdir -p "$lenv_home_path/python/current"
+  fi
 }
 
 get_asset() {
