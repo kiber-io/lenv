@@ -31,9 +31,10 @@ func Init(javaCmd *cobra.Command) {
 		DisableFlagParsing:    true,
 	}
 	var uninstallCmd = &cobra.Command{
-		Use:   "uninstall [version]",
-		Short: "Uninstall specific Java version",
-		Args:  cobra.ExactArgs(1),
+		Use:     "uninstall [version]",
+		Short:   "Uninstall specific Java version",
+		Aliases: []string{"u"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			uninstall(args[0])
 		},
@@ -94,6 +95,11 @@ func install(version string) {
 	fmt.Println("Extracting...")
 	common.Unzip(filePath, jdkDir)
 	os.Remove(filePath)
+	cmd := exec.Command("chmod", "-R", "755", jdkDir)
+	err = cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to set permissions: %v", err)
+	}
 	fmt.Printf("Java version %s installed\n", version)
 }
 
@@ -170,11 +176,6 @@ func setGlobalWindows(version common.Version) {
 func setGlobalLinux(version common.Version) {
 	os.Remove(common.Config.CurrentVersionDir)
 	err := os.Symlink(version.Path, common.Config.CurrentVersionDir)
-	if err != nil {
-		log.Fatalf("Failed to set global version: %v", err)
-	}
-	cmd := exec.Command("chmod", "-R", "755", common.Config.GlobalVersion.Path)
-	err = cmd.Run()
 	if err != nil {
 		log.Fatalf("Failed to set global version: %v", err)
 	}
