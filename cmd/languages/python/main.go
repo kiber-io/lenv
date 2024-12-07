@@ -32,9 +32,10 @@ func Init(pythonCmd *cobra.Command) {
 		DisableFlagParsing:    true,
 	}
 	var uninstallCmd = &cobra.Command{
-		Use:   "uninstall [version]",
-		Short: "Uninstall specific Java version",
-		Args:  cobra.ExactArgs(1),
+		Use:     "uninstall [version]",
+		Short:   "Uninstall specific Java version",
+		Aliases: []string{"u"},
+		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			uninstall(args[0])
 		},
@@ -95,6 +96,14 @@ func install(version string) {
 	fmt.Println("Extracting...")
 	common.Unzip(filePath, pythonDir)
 	os.Remove(filePath)
+	if runtime.GOOS == "linux" {
+		cmd := exec.Command("chmod", "-R", "+x", filepath.Join(pythonDir, "bin"))
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println("Failed to change permissions: ", err)
+			return
+		}
+	}
 
 	fmt.Println("Installing pip...")
 	getPipLink := "https://bootstrap.pypa.io/get-pip.py"
@@ -114,7 +123,7 @@ func install(version string) {
 	case "windows":
 		pythonBin = "python.exe"
 	case "linux":
-		pythonBin = "python3"
+		pythonBin = filepath.Join("bin", "python")
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
@@ -129,7 +138,28 @@ func install(version string) {
 	fmt.Printf("Python version %s installed\n", version)
 }
 
-func uninstall(version string) {}
+func uninstall(version string) {
+	parts := strings.Split(version, "-")
+	installed := common.FindVersion(common.Config.InstalledVersions, parts[0], parts[1])
+	if installed == nil {
+		fmt.Printf("Python version %s is not installed\n", version)
+		return
+	}
+	if installed.Name() == common.Config.GlobalVersion.Name() {
+		fmt.Printf("Python version %s is set as global, are you sure you want to uninstall it? [y/N]: ", version)
+		var response string
+		fmt.Scanln(&response)
+		if strings.TrimSpace(strings.ToLower(response)) != "y" {
+			return
+		}
+	}
+	err := os.RemoveAll(installed.Path)
+	if err != nil {
+		fmt.Printf("Failed to uninstall Python version %s: %v\n", version, err)
+		return
+	}
+	fmt.Printf("Python version %s uninstalled\n", version)
+}
 
 func listAvailable() {
 	versions, err := FetchVersions(runtime.GOOS, runtime.GOARCH)
@@ -183,9 +213,9 @@ func setGlobal(version string) {
 	switch runtime.GOOS {
 	case "windows":
 		setGlobalWindows(*installed)
-	// case "linux":
-	// case "android":
-	// 	setGlobalLinux(*installed)
+	case "linux":
+	case "android":
+		setGlobalLinux(*installed)
 	default:
 		log.Fatalf("Unknown operating system: %s", runtime.GOOS)
 	}
@@ -196,6 +226,14 @@ func setGlobalWindows(version common.Version) {
 	os.Remove(common.Config.CurrentVersionDir)
 	cmd := exec.Command("cmd", "/c", "mklink", "/J", common.Config.CurrentVersionDir, version.Path)
 	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to set global version: %v", err)
+	}
+}
+
+func setGlobalLinux(version common.Version) {
+	os.Remove(common.Config.CurrentVersionDir)
+	err := os.Symlink(version.Path, common.Config.CurrentVersionDir)
 	if err != nil {
 		log.Fatalf("Failed to set global version: %v", err)
 	}

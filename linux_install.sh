@@ -60,6 +60,7 @@ get_latest_asset() {
 new_directories() {
   mkdir -p "$lenv_home_path/bin"
   mkdir -p "$lenv_home_path/java/current"
+  mkdir -p "$lenv_home_path/python/current"
 }
 
 get_asset() {
@@ -99,6 +100,9 @@ update_environment_variables() {
   fi
   if ! grep -q "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" "$bashrc_file"; then
     echo "export PATH=\$LENV_HOME/bin:\$JAVA_HOME/bin:\$PATH" >> "$bashrc_file"
+  fi
+  if ! grep -q "export PATH=\$LENV_HOME/python/current/bin:\$PATH" "$bashrc_file"; then
+    echo "export PATH=\$LENV_HOME/python/current/bin:\$PATH" >> "$bashrc_file"
   fi
 }
 
