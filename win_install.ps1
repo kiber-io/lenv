@@ -11,6 +11,7 @@ function Initialize-EnvironmentVariables {
         lenvHomePath    = $lenvHomePath
         lenvHomeBinPath = "$lenvHomePath\bin"
         javaCurrentPath = "$lenvHomePath\java\current"
+        pythonCurrentPath = "$lenvHomePath\python\current"
     }
     return $envVars
 }
@@ -52,6 +53,9 @@ function New-Directories ($envVars) {
     if (!(Test-Path -Path $envVars.javaCurrentPath)) {
         New-Item -ItemType Directory -Path $envVars.javaCurrentPath | Out-Null
     }
+    if (!(Test-Path -Path $envVars.pythonCurrentPath)) {
+        New-Item -ItemType Directory -Path $envVars.pythonCurrentPath | Out-Null
+    }
 }
 
 function Get-Asset ($envVars) {
@@ -69,14 +73,17 @@ function Get-Asset ($envVars) {
 
 function Update-EnvironmentVariables ($envVars) {
     $path = [System.Environment]::GetEnvironmentVariable($envVars.ENV_PATH, [System.EnvironmentVariableTarget]::User)
-    $javaHomePath = [System.Environment]::GetEnvironmentVariable($envVars.ENV_JAVA_HOME, [System.EnvironmentVariableTarget]::User)
-    if ($null -eq $javaHomePath -or -not $path.Contains("%$($envVars.ENV_JAVA_HOME)%\bin")) {
-        $path = "%$($envVars.ENV_JAVA_HOME)%\bin;$path"
-    }
 
     $lenvPath = [System.Environment]::GetEnvironmentVariable($envVars.ENV_LENV_HOME, [System.EnvironmentVariableTarget]::User)
     if ($null -eq $lenvPath -or -not $path.Contains("%$($envVars.ENV_LENV_HOME)%\bin")) {
         $path = "%$($envVars.ENV_LENV_HOME)%\bin;$path"
+    }
+    $javaHomePath = [System.Environment]::GetEnvironmentVariable($envVars.ENV_JAVA_HOME, [System.EnvironmentVariableTarget]::User)
+    if ($null -eq $javaHomePath -or -not $path.Contains("%$($envVars.ENV_JAVA_HOME)%\bin")) {
+        $path = "%$($envVars.ENV_JAVA_HOME)%\bin;$path"
+    }
+    if (-not $path.Contains($envVars.pythonCurrentPath)) {
+        $path = "%$($envVars.ENV_LENV_HOME)%\python\current;%$($envVars.ENV_LENV_HOME)%\python\current\Scripts;$path"
     }
 
     [System.Environment]::SetEnvironmentVariable($envVars.ENV_LENV_HOME, $envVars.lenvHomePath, [System.EnvironmentVariableTarget]::User)

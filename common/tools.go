@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func GetPlatformPrefix(osName string, arch string) string {
@@ -33,24 +32,6 @@ func GetPlatformPrefix(osName string, arch string) string {
 	}
 
 	return prefix
-}
-
-func ParseAssetName(assetName string) string {
-	parts := strings.Split(assetName, "-")
-	if len(parts) < 2 {
-		return ""
-	}
-	nameWithoutSuffix := strings.TrimSuffix(parts[1], ".zip")
-	return nameWithoutSuffix
-}
-
-func FindVersion(versions []Version, targetVersion string, targetVendor string) *Version {
-	for _, v := range versions {
-		if v.Version == targetVersion && v.Vendor == targetVendor {
-			return &v
-		}
-	}
-	return nil
 }
 
 func DownloadFile(url string) (string, error) {

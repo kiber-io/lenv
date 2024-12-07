@@ -1,10 +1,7 @@
 package common
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 )
 
@@ -27,50 +24,20 @@ type Asset struct {
 	Name string `json:"name"`
 }
 
-func FetchVersions(platform string, arch string) ([]Version, error) {
-	platformPrefix := GetPlatformPrefix(platform, arch)
-	if platformPrefix == "" {
-		return nil, fmt.Errorf("unknown operating system and architecture: %s/%s", platform, arch)
-	}
-
-	url := "https://api.github.com/repos/kiber-io/jdks/releases"
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch JSON: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	var versions []ServerVersion
-	err = json.Unmarshal(body, &versions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
-	}
-
-	filteredVersions := []Version{}
-	for _, serverVersion := range versions {
-		filteredAssets := []Asset{}
-		for _, asset := range serverVersion.Assets {
-			if strings.HasPrefix(asset.Name, platformPrefix) {
-				filteredAssets = append(filteredAssets, asset)
-			}
-		}
-
-		if len(filteredAssets) > 0 {
-			for _, asset := range filteredAssets {
-				version := Version{
-					Version: serverVersion.TagName,
-					Path:    "",
-					Vendor:  ParseAssetName(asset.Name),
-				}
-				filteredVersions = append(filteredVersions, version)
-			}
+func FindVersion(versions []Version, targetVersion string, targetVendor string) *Version {
+	for _, v := range versions {
+		if v.Version == targetVersion && v.Vendor == targetVendor {
+			return &v
 		}
 	}
+	return nil
+}
 
-	return filteredVersions, nil
+func ParseAssetName(assetName string) string {
+	parts := strings.Split(assetName, "-")
+	if len(parts) < 2 {
+		return ""
+	}
+	nameWithoutSuffix := strings.TrimSuffix(parts[1], ".zip")
+	return nameWithoutSuffix
 }

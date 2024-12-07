@@ -1,9 +1,12 @@
 package java
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"kiber-io/lenv/common"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -81,7 +84,7 @@ func install(version string) {
 	}
 	fmt.Println("Downloading...")
 	platformPrefix := common.GetPlatformPrefix(runtime.GOOS, runtime.GOARCH)
-	url := fmt.Sprintf("https://github.com/kiber-io/jdks/releases/download/%s/%s-%s.zip", parts[0], platformPrefix, parts[1])
+	url := fmt.Sprintf("https://github.com/kiber-io/lenv-java-versions/releases/download/%s/%s-%s.zip", parts[0], platformPrefix, parts[1])
 	filePath, err := common.DownloadFile(url)
 	if err != nil {
 		fmt.Println("Failed to download file: ", err)
@@ -111,7 +114,7 @@ func listInstalled() {
 }
 
 func listAvailable() {
-	versions, err := common.FetchVersions(runtime.GOOS, runtime.GOARCH)
+	versions, err := FetchVersions(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		log.Fatalf("Error fetching versions: %v", err)
 	}
@@ -198,4 +201,52 @@ func uninstall(version string) {
 		return
 	}
 	fmt.Printf("Java version %s uninstalled\n", version)
+}
+
+func FetchVersions(platform string, arch string) ([]common.Version, error) {
+	platformPrefix := common.GetPlatformPrefix(platform, arch)
+	if platformPrefix == "" {
+		return nil, fmt.Errorf("unknown operating system and architecture: %s/%s", platform, arch)
+	}
+
+	url := "https://api.github.com/repos/kiber-io/lenv-java-versions/releases"
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch JSON: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	var versions []common.ServerVersion
+	err = json.Unmarshal(body, &versions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
+	}
+
+	filteredVersions := []common.Version{}
+	for _, serverVersion := range versions {
+		filteredAssets := []common.Asset{}
+		for _, asset := range serverVersion.Assets {
+			if strings.HasPrefix(asset.Name, platformPrefix) {
+				filteredAssets = append(filteredAssets, asset)
+			}
+		}
+
+		if len(filteredAssets) > 0 {
+			for _, asset := range filteredAssets {
+				version := common.Version{
+					Version: serverVersion.TagName,
+					Path:    "",
+					Vendor:  common.ParseAssetName(asset.Name),
+				}
+				filteredVersions = append(filteredVersions, version)
+			}
+		}
+	}
+
+	return filteredVersions, nil
 }
